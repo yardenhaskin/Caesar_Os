@@ -1,5 +1,7 @@
-#include <stdio.h>
 
+#include<Windows.h>
+#ifndef functions
+#define functions
 char decode(char letter, int key);
 char decode_small_letters(char letter, int key);
 char decode_capital_letters(char letter, int key);
