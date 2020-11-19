@@ -69,14 +69,15 @@ LONG find_input_file_size(char* directory_with_input)
 	return input_file_size; //without EOF symbol
 }
 
-int open_output_file(char* directory_with_input, char* key)
+HANDLE open_output_file(char* directory_with_input, LONG input_file_size)
 {
-	LONG l_distance_to_move = 0;
-	int int_key = atoi(key);
+	LONG l_distance_to_move = input_file_size;
+	//int int_key = atoi(key);
 	errno_t retval_of_strcat1 =NULL, retval_of_strcat2 = NULL;
 	char* directory_with_output = NULL;
 	const char* output_file_name = "decrypted.txt";
 	const char* directory= extract_directory(directory_with_input);
+	//free(directory_with_input);
 	int dir_and_out_len = strlen(directory) + OUTPUT_FILE_NAME_LENGTH;
 	directory_with_output = (char*)malloc((sizeof(char)) * dir_and_out_len);
 	*directory_with_output = '\0';
@@ -87,11 +88,10 @@ int open_output_file(char* directory_with_input, char* key)
 	{
 		printf("Failed to strcat directory and output file name.\n");
 		/*Need to free files,heap ...*/
-		return -1;
+		return NULL;
 	}
 	LPCSTR lp_output_file_name = (LPCSTR)directory_with_output;
 	printf("this is the LPCSTR directory: %s\n", lp_output_file_name);
-	l_distance_to_move=find_input_file_size(directory_with_input);
 	HANDLE output_file_handle =CreateFileA(lp_output_file_name, GENERIC_ALL,
 		(FILE_SHARE_READ | FILE_SHARE_WRITE),
 		NULL,
@@ -101,39 +101,27 @@ int open_output_file(char* directory_with_input, char* key)
 
 	SetFilePointer(output_file_handle, l_distance_to_move + 1, NULL, FILE_BEGIN); // +1 to not lose the last letter
 	SetEndOfFile(output_file_handle);
+	SetFilePointer(output_file_handle, 0, NULL, FILE_BEGIN);
 	free(directory_with_output);
-	CloseHandle(output_file_handle);
+	return output_file_handle;
+	//CloseHandle(output_file_handle);
 }
 
-
-
-
-
-
-
-
-
-
-//bullshit:
-
-
-/*
-#include <tchar.h>
-#include <strsafe.h>
-LPCSTR lp_input_file_name = (LPCSTR)directory_with_input;
-// Attempt a synchronous read operation.
-HANDLE h_input_file = CreateFile(directory_with_input,               // file to open
-	GENERIC_READ,          // open for reading
-	FILE_SHARE_READ,       // share for reading
-	NULL,                  // default security
-	OPEN_EXISTING,         // existing file only
-	FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, // normal file
-	NULL);                 // no attr. template
-if (h_input_file == INVALID_HANDLE_VALUE)
+HANDLE open_input_file(char* directory_with_input)
 {
-	DisplayError(TEXT("CreateFile"));
-	_tprintf(TEXT("Terminal failure: unable to open file \"%s\" for read.\n"), directory_with_input);
-	return;
+
+	LPCSTR lp_input_file_name = (LPCSTR)directory_with_input;
+	printf("this is the LPCSTR directory: %s\n", directory_with_input);
+
+	HANDLE input_file_handle = CreateFileA(lp_input_file_name,		//The name of the file to be created or opened
+		GENERIC_READ,												//The requested access to the file 
+		FILE_SHARE_READ,											//The requested sharing mode of the file 
+			NULL,													//no security
+			OPEN_EXISTING,											//Opens a file or device, only if it exists
+			FILE_ATTRIBUTE_NORMAL,									//FILE_ATTRIBUTE_NORMAL being the most common default value for files.
+			NULL);													//This parameter can be NULL.When opening an existing file CreateFile ignores this parameter.
+
+	return input_file_handle;
+	//CloseHandle(input_file_handle);
 }
-ReadFileEx(h_input_file, ReadBuffer, BUFFERSIZE - 1, &ol, FileIOCompletionRoutine)
-*/
+
