@@ -12,13 +12,24 @@ const int STATUS_CODE_FAILURE = -1;
 //Step Number One
 main(int argc, char* argv[])
 {
+	if (argc != 4)
+	{
+		printf("Error, Invalid number of arguments\n");
+		return STATUS_CODE_FAILURE;
+	}
+
 	int key = atoi(argv[2]);
-	int THREADCOUNT = 4;
-	int indexes[2][2] = { {1,2}, {3,4} };
+	int num_of_threads= atoi(argv[3]);
 	LONG input_file_size = find_input_file_size(argv[1]); //without EOF
+	int num_of_rows= find_num_of_rows(argv[1]);
 	HANDLE output_file_handle = open_output_file(argv[1], input_file_size);
 	HANDLE input_file_handle = open_input_file(argv[1]);
 	char* buffer = (char*)calloc(input_file_size, sizeof(char));
+	OVERLAPPED ol = { 0 };
+	OVERLAPPED ol2 = { 0 };
+	
+	int THREADCOUNT = 4;
+	int indexes[2][2] = { {1,2}, {3,4} };
 	//HANDLE aThread=(HANDLE*)malloc(sizeof(HANDLE)*THREADCOUNT);// at the moment I chose arbitrary
 	//size of 4, but it actually needs to be allocated
 	HANDLE aThread[4];
@@ -26,13 +37,6 @@ main(int argc, char* argv[])
 	//printf("%d", sizeof(aThread));
 	DWORD ThreadID;
 	int i;
-	OVERLAPPED ol = { 0 };
-	OVERLAPPED ol2 = { 0 };
-	if (argc != 3)
-	{
-		printf("Error, Invalid number of arguments\n");
-		return STATUS_CODE_FAILURE;
-	}
 
 	if (FALSE == ReadFile(input_file_handle,					//A handle to the  file
 		buffer,							//A pointer to the buffer that receives the data read from a file 

@@ -55,7 +55,6 @@ LONG find_input_file_size(char* directory_with_input)
 	errno_t retval_of_input;
 	LONG input_file_size = 0;				//we assume we can store the num of char in LONG type
 	retval_of_input = fopen_s(&p_stream_input, directory_with_input, "r");   //opens the txt folder written in the command line
-	printf("directory with input is : %s \n", directory_with_input);
 	if (0 != retval_of_input)
 	{
 		printf("Failed to open file.\n");
@@ -91,7 +90,6 @@ HANDLE open_output_file(char* directory_with_input, LONG input_file_size)
 		return NULL;
 	}
 	LPCSTR lp_output_file_name = (LPCSTR)directory_with_output;
-	printf("this is the LPCSTR directory: %s\n", lp_output_file_name);
 	HANDLE output_file_handle =CreateFileA(lp_output_file_name, GENERIC_ALL,
 		(FILE_SHARE_READ | FILE_SHARE_WRITE),
 		NULL,
@@ -111,7 +109,6 @@ HANDLE open_input_file(char* directory_with_input)
 {
 
 	LPCSTR lp_input_file_name = (LPCSTR)directory_with_input;
-	printf("this is the LPCSTR directory: %s\n", directory_with_input);
 
 	HANDLE input_file_handle = CreateFileA(lp_input_file_name,		//The name of the file to be created or opened
 		GENERIC_READ,												//The requested access to the file 

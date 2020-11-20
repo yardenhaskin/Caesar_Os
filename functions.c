@@ -20,6 +20,7 @@ char encode_capital_letters(char letter, int key) {
 char encode_number(char letter, int key) {
 	return ('0' + (letter - '0' + key) % 10);
 }
+
 char decode(char letter, int key) {
 	if (letter >= 'a' && letter <= 'z')
 		return decode_small_letters(letter, key);
@@ -40,7 +41,7 @@ char encode(char letter, int key) {
 	return letter;
 }
 
-int getNumberOfLines(FILE *filePointer) {
+int getNumberOfLines(FILE *filePointer) { 
 	char c;
 	int count = 0;
 	for (c = getc(filePointer); c != EOF; c = getc(filePointer)) {
@@ -48,4 +49,54 @@ int getNumberOfLines(FILE *filePointer) {
 			count += 1;
 	}
 	return count;
+}
+
+int find_num_of_rows(char* directory_with_input)
+{
+	FILE* p_stream_input = NULL;
+	errno_t retval_of_input;
+	int num_of_rows = 0;				//we assume we can store the num of char in LONG type
+	retval_of_input = fopen_s(&p_stream_input, directory_with_input, "r");   //opens the txt folder written in the command line
+	if (0 != retval_of_input)
+	{
+		printf("Failed to open file.\n");
+		return -1;
+	}
+	char c;
+	while (c=getc(p_stream_input) != EOF)
+	{
+		if(c=='\n')
+			num_of_rows += 1;
+	}
+	fclose(p_stream_input);
+	return num_of_rows; 
+}
+
+int** start_end_thread_array(int num_of_rows, int num_of_threads)
+{
+	int* rows_per_thread_array = (int*)calloc(num_of_threads + 1, sizeof(int));
+	int rows_per_thread_base = (int)(num_of_rows / num_of_threads);
+	int extra_rows = num_of_rows % num_of_threads;
+	for (int i = 1; i <= num_of_threads; i++)
+	{
+		if (extra_rows != 0)
+		{
+			rows_per_thread_array[i] = rows_per_thread_base + 1;
+			extra_rows -= 1;
+		}
+		else
+			rows_per_thread_array[i] = rows_per_thread_base;
+	}
+	int** range_for_every_thread_array = (int**)malloc(num_of_threads * sizeof(int*));
+	for (int i = 0; i <= num_of_threads; i++)
+		range_for_every_thread_array[i] = (int*)malloc(2 * sizeof(int));
+	range_for_every_thread_array[1][0] = 0;
+	range_for_every_thread_array[1][1] = rows_per_thread_array[1] - 1;
+	for (int row = 2; row <= num_of_threads; row++)
+	{
+		range_for_every_thread_array[row][0] = range_for_every_thread_array[row - 1][1] + 1;
+		range_for_every_thread_array[row][1] = range_for_every_thread_array[row][0] + rows_per_thread_array[row] - 1;
+	}
+	free(rows_per_thread_array);
+	return range_for_every_thread_array;
 }
