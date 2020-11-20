@@ -41,15 +41,10 @@ char encode(char letter, int key) {
 	return letter;
 }
 
-int getNumberOfLines(FILE *filePointer) { 
-	char c;
-	int count = 0;
-	for (c = getc(filePointer); c != EOF; c = getc(filePointer)) {
-		if (c == '\n') // Increment count if this character is newline 
-			count += 1;
-	}
-	return count;
-}
+
+
+
+
 
 int find_num_of_rows(char* directory_with_input)
 {
@@ -72,9 +67,8 @@ int find_num_of_rows(char* directory_with_input)
 	return num_of_rows; 
 }
 
-int** start_end_thread_array(int num_of_rows, int num_of_threads)
+void start_end_thread_array(int num_of_rows, int num_of_threads, int* rows_per_thread_array, int** range_for_every_thread_array)
 {
-	int* rows_per_thread_array = (int*)calloc(num_of_threads + 1, sizeof(int));
 	int rows_per_thread_base = (int)(num_of_rows / num_of_threads);
 	int extra_rows = num_of_rows % num_of_threads;
 	for (int i = 1; i <= num_of_threads; i++)
@@ -87,7 +81,6 @@ int** start_end_thread_array(int num_of_rows, int num_of_threads)
 		else
 			rows_per_thread_array[i] = rows_per_thread_base;
 	}
-	int** range_for_every_thread_array = (int**)malloc(num_of_threads * sizeof(int*));
 	for (int i = 0; i <= num_of_threads; i++)
 		range_for_every_thread_array[i] = (int*)malloc(2 * sizeof(int));
 	range_for_every_thread_array[1][0] = 0;
@@ -97,6 +90,4 @@ int** start_end_thread_array(int num_of_rows, int num_of_threads)
 		range_for_every_thread_array[row][0] = range_for_every_thread_array[row - 1][1] + 1;
 		range_for_every_thread_array[row][1] = range_for_every_thread_array[row][0] + rows_per_thread_array[row] - 1;
 	}
-	free(rows_per_thread_array);
-	return range_for_every_thread_array;
 }

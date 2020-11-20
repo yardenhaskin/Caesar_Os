@@ -18,19 +18,32 @@ main(int argc, char* argv[])
 		return STATUS_CODE_FAILURE;
 	}
 
-	int key = atoi(argv[2]);
-	int num_of_threads= atoi(argv[3]);
-	LONG input_file_size = find_input_file_size(argv[1]); //without EOF
-	int num_of_rows= find_num_of_rows(argv[1]);
-	HANDLE output_file_handle = open_output_file(argv[1], input_file_size);
-	HANDLE input_file_handle = open_input_file(argv[1]);
-	char* buffer = (char*)calloc(input_file_size, sizeof(char));
-	OVERLAPPED ol = { 0 };
-	OVERLAPPED ol2 = { 0 };
+	int key = atoi(argv[2]);													// getting the key as integer
+	LONG input_file_size = find_input_file_size(argv[1]);						//number of chars in the input file without EOF
+	int num_of_rows= find_num_of_rows(argv[1]);									//number of rows in the input file 
+	HANDLE output_file_handle = open_output_file(argv[1], input_file_size);		//initializing the output file 
+	HANDLE input_file_handle = open_input_file(argv[1]);						// opening input file for threads to read
 	
-	int THREADCOUNT = 4;
-	int indexes[2][2] = { {1,2}, {3,4} };
-	//HANDLE aThread=(HANDLE*)malloc(sizeof(HANDLE)*THREADCOUNT);// at the moment I chose arbitrary
+	
+
+	//Initializing an array of 2d arrays 
+	//---------------------------------START--------------------------------------------------------------//
+	// start_end_thread_array[0] array is always [0,0] , 
+	//start_end_thread_array[i]=[start,end] shows the start and end row that thread i must read/write to
+	// if start>END thread must not write/read any lines!
+	// start_end_thread_array= [[0,0],
+	//							[,],
+	//							[,],
+	//							[,],
+	//							[,]]
+
+	int num_of_threads= atoi(argv[3]);
+	int* rows_per_thread_array = (int*)calloc(num_of_threads + 1, sizeof(int));
+	int** range_for_every_thread_array = (int**)malloc(num_of_threads * sizeof(int*));
+	start_end_thread_array(num_of_rows, num_of_threads, rows_per_thread_array, range_for_every_thread_array);
+	//---------------------------------END------------------------------------------------------------------//
+
+	//HANDLE aThread=(HANDLE*)malloc(sizeof(HANDLE)*num_of_threads);// at the moment I chose arbitrary
 	//size of 4, but it actually needs to be allocated
 	HANDLE aThread[4];
 	//printf("%d", 6666);
@@ -38,6 +51,11 @@ main(int argc, char* argv[])
 	DWORD ThreadID;
 	int i;
 
+	//Reading the input file:
+	//---------------------------------START--------------------------------------------------------------//
+	char* buffer = (char*)calloc(input_file_size, sizeof(char)); // initializing the Buffer
+	OVERLAPPED ol = { 0 };
+	
 	if (FALSE == ReadFile(input_file_handle,					//A handle to the  file
 		buffer,							//A pointer to the buffer that receives the data read from a file 
 		input_file_size,						//The maximum number of bytes to be read.				
@@ -47,10 +65,19 @@ main(int argc, char* argv[])
 		printf("Error, Unable to read from file\n"); // you can make this better by using GetLastError()
 		return STATUS_CODE_FAILURE;
 	}
+	//---------------------------------END------------------------------------------------------------------//
+
+	//Decoding:
+	//---------------------------------START--------------------------------------------------------------//
 	for (int i = 0; i <= input_file_size; i++)
 	{
 		buffer[i] = decode(buffer[i], key);
 	}
+	//---------------------------------END------------------------------------------------------------------//
+
+	//writing to the output file:
+	//---------------------------------START--------------------------------------------------------------//
+	OVERLAPPED ol2 = { 0 };
 	if (FALSE == WriteFile(
 		output_file_handle,
 		buffer,
@@ -61,10 +88,12 @@ main(int argc, char* argv[])
 		printf("Error, Unable to read from file\n"); // you can make this better by using GetLastError()
 		return STATUS_CODE_FAILURE;
 	}
+	//---------------------------------END------------------------------------------------------------------//
+
 	ghSemaphore = CreateSemaphore(
 		NULL,           // default security attributes
-		THREADCOUNT,  // initial count
-		THREADCOUNT,  // maximum count
+		num_of_threads,  // initial count
+		num_of_threads,  // maximum count
 		NULL);          // unnamed semaphore
 
 	if (ghSemaphore == NULL)
@@ -72,9 +101,9 @@ main(int argc, char* argv[])
 		printf("CreateSemaphore error: %d\n", GetLastError());
 		return 1;
 	}
-	for (i = 0; i < THREADCOUNT; i++)
+	for (i = 0; i < num_of_threads; i++)
 	{
-		int* curPtr = indexes[i];
+		int* curPtr = range_for_every_thread_array[i];
 		aThread[i] = CreateThread(
 			NULL,       // default security attributes
 			0,          // default stack size
@@ -95,8 +124,8 @@ main(int argc, char* argv[])
 	//second argument: An array of object handles
 	//third argument:If this parameter is TRUE, the function returns when the state of all objects in the lpHandles array is signaled
 	//forth argument :The time-out interval, in milliseconds. was chosen arbitrary
-	WaitForMultipleObjects(THREADCOUNT, aThread, TRUE, 20000);
-	for (i = 0; i < THREADCOUNT; i++)
+	WaitForMultipleObjects(num_of_threads, aThread, TRUE, 20000);
+	for (i = 0; i < num_of_threads; i++)
 		CloseHandle(aThread[i]);
 
 	//after all the handles were closed we need to close the semaphore handle
