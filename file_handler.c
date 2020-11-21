@@ -49,36 +49,49 @@ const char* extract_directory(char* directory_with_input) // got to pay attentio
 
 
 }
-LONG find_input_file_size(char* directory_with_input)
+void find_input_file_sizes(char* directory_with_input, int* p_num_of_rows, LONG* p_input_file_size) // Be careful the last row may have EOF instead of   \n
 {
 	FILE* p_stream_input = NULL;
 	errno_t retval_of_input;
-	LONG input_file_size = 0;				//we assume we can store the num of char in LONG type
+	LONG input_file_size = *p_input_file_size;				//we assume we can store the num of char in LONG type
+	int num_of_rows = *p_num_of_rows;		//we assume we can store the num of rows in int type
 	retval_of_input = fopen_s(&p_stream_input, directory_with_input, "r");   //opens the txt folder written in the command line
 	if (0 != retval_of_input)
 	{
 		printf("Failed to open file.\n");
 		return -1;
 	}
-	while (getc(p_stream_input) != EOF)
+	char c;
+	int flag;
+	while (c=getc(p_stream_input) != EOF)
 	{
-		input_file_size += 1;
+		if (c == '\n')
+		{
+			num_of_rows += 1;
+			input_file_size += 1;
+			flag = 1;
+		}
+		else
+		{
+			input_file_size += 1;
+			flag = 0;
+		}
+		
+	}
+	if (flag == 0) // This one is to check if the last line is without \n but with EOF
+	{
+		num_of_rows += 1;	
 	}
 	fclose(p_stream_input);
-	return input_file_size; //without EOF symbol
+	//return input_file_size; //without EOF symbol
 }
 
-HANDLE open_output_file(char* directory_with_input, LONG input_file_size)
+HANDLE open_output_file(char* directory_with_input, LONG input_file_size, char* directory_with_output, int dir_and_out_len, const char* directory)
 {
 	LONG l_distance_to_move = input_file_size;
 	//int int_key = atoi(key);
 	errno_t retval_of_strcat1 =NULL, retval_of_strcat2 = NULL;
-	char* directory_with_output = NULL;
 	const char* output_file_name = "decrypted.txt";
-	const char* directory= extract_directory(directory_with_input);
-	//free(directory_with_input);
-	int dir_and_out_len = strlen(directory) + OUTPUT_FILE_NAME_LENGTH;
-	directory_with_output = (char*)malloc((sizeof(char)) * dir_and_out_len);
 	*directory_with_output = '\0';
 	retval_of_strcat1 = strcat_s(directory_with_output, dir_and_out_len, directory);
 	retval_of_strcat2 = strcat_s(directory_with_output, dir_and_out_len, output_file_name);

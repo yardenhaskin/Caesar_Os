@@ -45,28 +45,6 @@ char encode(char letter, int key) {
 
 
 
-
-int find_num_of_rows(char* directory_with_input)
-{
-	FILE* p_stream_input = NULL;
-	errno_t retval_of_input;
-	int num_of_rows = 0;				//we assume we can store the num of char in LONG type
-	retval_of_input = fopen_s(&p_stream_input, directory_with_input, "r");   //opens the txt folder written in the command line
-	if (0 != retval_of_input)
-	{
-		printf("Failed to open file.\n");
-		return -1;
-	}
-	char c;
-	while (c=getc(p_stream_input) != EOF)
-	{
-		if(c=='\n')
-			num_of_rows += 1;
-	}
-	fclose(p_stream_input);
-	return num_of_rows; 
-}
-
 void start_end_thread_array(int num_of_rows, int num_of_threads, int* rows_per_thread_array, int** range_for_every_thread_array)
 {
 	int rows_per_thread_base = (int)(num_of_rows / num_of_threads);
@@ -89,5 +67,70 @@ void start_end_thread_array(int num_of_rows, int num_of_threads, int* rows_per_t
 	{
 		range_for_every_thread_array[row][0] = range_for_every_thread_array[row - 1][1] + 1;
 		range_for_every_thread_array[row][1] = range_for_every_thread_array[row][0] + rows_per_thread_array[row] - 1;
+	}
+}
+
+
+void make_sizes_of_rows_array(char* directory_with_input, int* sizes_of_rows_array)
+{
+	FILE* p_stream_input = NULL;
+	errno_t retval_of_input;
+	int num_of_rows = 0;
+	int row_size = 0;
+	retval_of_input = fopen_s(&p_stream_input, directory_with_input, "r");   //opens the txt folder written in the command line
+	if (0 != retval_of_input)
+	{
+		printf("Failed to open file.\n");
+		return;
+	}
+	char c;
+	while (c = getc(p_stream_input) != EOF)
+	{
+
+
+		if (c == '\n')
+		{
+			row_size += 1;
+			sizes_of_rows_array[num_of_rows] = row_size;
+			num_of_rows += 1;
+			row_size = 0;
+
+		}
+		else
+			row_size += 1;
+	}
+	if (row_size != 0) // This one is to check if the last line is without \n but with EOF
+	{
+		sizes_of_rows_array[num_of_rows] = row_size;
+		num_of_rows += 1;
+		row_size = 0;
+	}
+
+	fclose(p_stream_input);
+}
+
+void start_end_thread_array_in_chars(int* sizes_of_rows_array, int** range_for_every_thread_array, int num_of_threads)
+{
+	
+	int sum = 0;
+	int last_row = range_for_every_thread_array[1][1];
+	for (int j = 0; j <= last_row ;j++)
+	{
+		sum = sum + sizes_of_rows_array[j];
+	}
+	range_for_every_thread_array[1][1] = sum;
+	sum = 0;
+
+	for (int i = 2; i <= num_of_threads; i++)
+	{
+		int start = range_for_every_thread_array[i][0];
+		int end = range_for_every_thread_array[i][1];
+		range_for_every_thread_array[i][0] = range_for_every_thread_array[i - 1][1] + 1;
+		for (int k = start; k <= end; k++)
+		{
+			sum = sum + sizes_of_rows_array[k];
+		}
+		range_for_every_thread_array[i][1] = sum;
+		sum = 0;
 	}
 }

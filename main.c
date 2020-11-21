@@ -4,12 +4,14 @@
 #include<stdlib.h>
 #include"functions.h"
 #include"file_handler.h"
+#include "io_Thread.h"
 
-HANDLE ghSemaphore;
+HANDLE ghSemaphore; // maybe it is better to initialize it on heap as said in recitation 4
 DWORD WINAPI ThreadProc(LPVOID);
 
 const int STATUS_CODE_FAILURE = -1;
-//Step Number One
+static const int OUTPUT_FILE_NAME_LENGTH = 14;
+
 main(int argc, char* argv[])
 {
 	if (argc != 4)
@@ -18,20 +20,38 @@ main(int argc, char* argv[])
 		return STATUS_CODE_FAILURE;
 	}
 
-	int key = atoi(argv[2]);													// getting the key as integer
-	LONG input_file_size = find_input_file_size(argv[1]);						//number of chars in the input file without EOF
-	int num_of_rows= find_num_of_rows(argv[1]);									//number of rows in the input file 
-	HANDLE output_file_handle = open_output_file(argv[1], input_file_size);		//initializing the output file 
-	HANDLE input_file_handle = open_input_file(argv[1]);						// opening input file for threads to read
-	
+	int key = atoi(argv[2]);														// getting the key as integer
+
+	//---START---------------------------------------------------------------------------------------------------------------------------------------//
+	int num_of_rows = 0;
+	int* p_num_of_rows = &num_of_rows;
+	LONG input_file_size = 0;
+	LONG* p_input_file_size = &input_file_size;
+	find_input_file_sizes(argv[1], p_num_of_rows, p_input_file_size);	// initializes the number of rows and number of chars in input file
+	//---END----------------------------------------------------------------------------------------------------------------------------------------------//
+
+	//---START---------------------------------------------------------------------------------------------------------------------------------------//
+	int* sizes_of_rows_array = (int*)calloc(num_of_rows, sizeof(int));			
+	make_sizes_of_rows_array(argv[1], sizes_of_rows_array); //function that makes an array that array[i]=(size of row i in chars)
+	//---END----------------------------------------------------------------------------------------------------------------------------------------------//
+
+	//---START---------------------------------------------------------------------------------------------------------------------------------------//
+	char* directory_with_output = NULL;
+	const char* directory = extract_directory(argv[1]);
+	int dir_and_out_len = strlen(directory) + OUTPUT_FILE_NAME_LENGTH;
+	directory_with_output = (char*)malloc((sizeof(char)) * dir_and_out_len);
+	HANDLE output_file_handle = open_output_file(argv[1], input_file_size,directory_with_output,dir_and_out_len,directory); //initializing the output file, the output file directory
+	HANDLE input_file_handle = open_input_file(argv[1]);							// opening input file for threads to read
+	//---END----------------------------------------------------------------------------------------------------------------------------------------------//
+
 	
 
 	//Initializing an array of 2d arrays 
 	//---------------------------------START--------------------------------------------------------------//
-	// start_end_thread_array[0] array is always [0,0] , 
-	//start_end_thread_array[i]=[start,end] shows the start and end row that thread i must read/write to
+	// range_for_every_thread_array[0] array is always [0,0] , 
+	//range_for_every_thread_array[i]=[start,end] shows the start and end row that thread i must read/write to
 	// if start>END thread must not write/read any lines!
-	// start_end_thread_array= [[0,0],
+	// range_for_every_thread_array= [[0,0],
 	//							[,],
 	//							[,],
 	//							[,],
@@ -41,8 +61,25 @@ main(int argc, char* argv[])
 	int* rows_per_thread_array = (int*)calloc(num_of_threads + 1, sizeof(int));
 	int** range_for_every_thread_array = (int**)malloc(num_of_threads * sizeof(int*));
 	start_end_thread_array(num_of_rows, num_of_threads, rows_per_thread_array, range_for_every_thread_array);
+	start_end_thread_array_in_chars(sizes_of_rows_array, range_for_every_thread_array,num_of_threads); // Updates range_for_every_thread_array to chars counting instead of rows.
+
 	//---------------------------------END------------------------------------------------------------------//
 
+	//---START---------------------------------------------------------------------------------------------------------------------------------------//
+	IO_THREAD_params_t* p_thread_params;
+	p_thread_params = (IO_THREAD_params_t*)malloc(sizeof(IO_THREAD_params_t));
+	if (NULL == p_thread_params)
+	{
+		printf("Error when allocating memory");
+		return STATUS_CODE_FAILURE;
+	}
+	//---END----------------------------------------------------------------------------------------------------------------------------------------------//
+
+
+
+
+	//---START---------------------------------------------------------------------------------------------------------------------------------------//
+	//(((((((((((((T h e s e    m a d e    b y      Y a r d e n))))))))))))
 	//HANDLE aThread=(HANDLE*)malloc(sizeof(HANDLE)*num_of_threads);// at the moment I chose arbitrary
 	//size of 4, but it actually needs to be allocated
 	HANDLE aThread[4];
@@ -50,6 +87,8 @@ main(int argc, char* argv[])
 	//printf("%d", sizeof(aThread));
 	DWORD ThreadID;
 	int i;
+	//---END----------------------------------------------------------------------------------------------------------------------------------------------//
+
 
 	//Reading the input file:
 	//---------------------------------START--------------------------------------------------------------//
@@ -101,16 +140,23 @@ main(int argc, char* argv[])
 		printf("CreateSemaphore error: %d\n", GetLastError());
 		return 1;
 	}
-	for (i = 0; i < num_of_threads; i++)
+	for (i = 0; i < num_of_threads; i++) // (should fix this to i=1 --> num_of_threads, because the implementation of  range_for_every_thread_array)
 	{
-		int* curPtr = range_for_every_thread_array[i];
+		//int* curPtr = range_for_every_thread_array[i];
+
+		/* Prepare parameters for thread */
+		p_thread_params->arr[0] = range_for_every_thread_array[i][0];
+		p_thread_params->arr[1] = range_for_every_thread_array[i][1];
+		p_thread_params->full_path_of_input = argv[1];
+		p_thread_params->full_path_of_output = directory_with_output;
+
 		aThread[i] = CreateThread(
 			NULL,       // default security attributes
 			0,          // default stack size
 			(LPTHREAD_START_ROUTINE)ThreadProc,
-			curPtr,       // here we need to give arguments
+			p_thread_params,       // here we need to give arguments
 			0,          // default creation flags
-			&ThreadID); // receive thread identifier
+			&ThreadID); // receive thread identifier (shouldn't this be different for every thread???)
 
 		if (aThread[i] == NULL)
 		{
@@ -138,7 +184,7 @@ main(int argc, char* argv[])
 DWORD WINAPI ThreadProc(LPVOID lpParam)
 {
 
-	int arr[2] = &lpParam;
+	//int arr[2] = &lpParam; 
 
 	DWORD dwWaitResult;
 	BOOL bContinue = TRUE;
@@ -151,11 +197,22 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 			ghSemaphore,   // handle to semaphore
 			0L);           // zero-second time-out interval
 
+		IO_THREAD_params_t* p_params;
+		p_params = (IO_THREAD_params_t*)lpParam;
+		int start_char = p_params->arr[0];
+		int end_char = p_params->arr[1];
+		//p_params->full_path_of_input;
+		//p_params->full_path_of_output;
+
 		switch (dwWaitResult)
 		{
 			// The semaphore object was signaled.
 		case WAIT_OBJECT_0:
 			// TODO: Perform task
+			//SetFilePointer(, start_char, NULL, FILE_BEGIN);
+
+
+
 			printf("Thread %d: wait succeeded\n", GetCurrentThreadId());
 			bContinue = FALSE;
 

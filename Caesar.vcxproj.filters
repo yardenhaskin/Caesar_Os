@@ -24,12 +24,18 @@
     <ClCompile Include="file_handler.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="io_thread.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="functions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="file_handler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="io_thread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
