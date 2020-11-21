@@ -23,7 +23,9 @@
 typedef struct
 {
 	int arr[2];
-	HANDLE* output_file_handle;
+	char* full_path_of_input;
+	char* full_path_of_output;
+
 } IO_THREAD_params_t;
 
 // Function Declarations -------------------------------------------------------

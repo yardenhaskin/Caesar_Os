@@ -140,7 +140,7 @@ main(int argc, char* argv[])
 		printf("CreateSemaphore error: %d\n", GetLastError());
 		return 1;
 	}
-	for (i = 0; i < num_of_threads; i++) // (should fix this to i=1 --> num_of_threads, because the implementation of  range_for_every_thread_array)
+	for (i = 1; i <= num_of_threads; i++) // (should fix this to i=1 --> num_of_threads, because the implementation of  range_for_every_thread_array)
 	{
 		//int* curPtr = range_for_every_thread_array[i];
 
