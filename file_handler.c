@@ -87,14 +87,12 @@ void find_input_file_sizes(char* directory_with_input, int* p_num_of_rows, LONG*
 	fclose(p_stream_input);
 	//return input_file_size; //without EOF symbol
 }
-
-HANDLE open_output_file(char* directory_with_input, LONG input_file_size, char* directory_with_output, int dir_and_out_len, const char* directory)
+void set_up_Directory_with_output(char* directory_with_input, LONG input_file_size, char* directory_with_output, int dir_and_out_len, const char* directory)
 {
 	LONG l_distance_to_move = input_file_size;
-	//int int_key = atoi(key);
-	errno_t retval_of_strcat1 =NULL, retval_of_strcat2 = NULL;
+	errno_t retval_of_strcat1 = NULL, retval_of_strcat2 = NULL;
 	const char* output_file_name = "decrypted.txt";
-	directory_with_output = '\0';
+	directory_with_output[0] = '\0';
 	retval_of_strcat1 = strcat_s(directory_with_output, dir_and_out_len, directory);
 	retval_of_strcat2 = strcat_s(directory_with_output, dir_and_out_len, output_file_name);
 
@@ -102,8 +100,26 @@ HANDLE open_output_file(char* directory_with_input, LONG input_file_size, char* 
 	{
 		printf("Failed to strcat directory and output file name.\n");
 		/*Need to free files,heap ...*/
-		return NULL;
+		return;
 	}
+}
+HANDLE open_output_file(char* directory_with_input, LONG input_file_size, char* directory_with_output, int dir_and_out_len, const char* directory)
+{
+	LONG l_distance_to_move = input_file_size;
+
+	//int int_key = atoi(key);
+	//errno_t retval_of_strcat1 =NULL, retval_of_strcat2 = NULL;
+	//const char* output_file_name = "decrypted.txt";
+	//directory_with_output[0] = '\0';
+	//retval_of_strcat1 = strcat_s(directory_with_output, dir_and_out_len, directory);
+	//retval_of_strcat2 = strcat_s(directory_with_output, dir_and_out_len, output_file_name);
+
+	//if (0 != retval_of_strcat1 || 0 != retval_of_strcat2)
+	//{
+	//	printf("Failed to strcat directory and output file name.\n");
+	//	/*Need to free files,heap ...*/
+	//	return NULL;
+	//}
 	LPCSTR lp_output_file_name = (LPCSTR)directory_with_output;
 	HANDLE output_file_handle =CreateFileA(lp_output_file_name, GENERIC_ALL,
 		(FILE_SHARE_READ | FILE_SHARE_WRITE),
@@ -115,7 +131,6 @@ HANDLE open_output_file(char* directory_with_input, LONG input_file_size, char* 
 	SetFilePointer(output_file_handle, l_distance_to_move + 1, NULL, FILE_BEGIN); // +1 to not lose the last letter
 	SetEndOfFile(output_file_handle);
 	SetFilePointer(output_file_handle, 0, NULL, FILE_BEGIN);
-	free(directory_with_output);
 	return output_file_handle;
 	//CloseHandle(output_file_handle);
 }
