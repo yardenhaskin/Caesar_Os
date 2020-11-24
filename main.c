@@ -28,6 +28,7 @@ main(int argc, char* argv[])
 	LONG input_file_size = 0;
 	LONG* p_input_file_size = &input_file_size;
 	find_input_file_sizes(argv[1], p_num_of_rows, p_input_file_size);	// initializes the number of rows and number of chars in input file
+
 	//---END----------------------------------------------------------------------------------------------------------------------------------------------//
 
 	//---START---------------------------------------------------------------------------------------------------------------------------------------//
@@ -38,9 +39,11 @@ main(int argc, char* argv[])
 	//---START---------------------------------------------------------------------------------------------------------------------------------------//
 	char* directory_with_output = NULL;
 	const char* directory = extract_directory(argv[1]);
+
 	int dir_and_out_len = strlen(directory) + OUTPUT_FILE_NAME_LENGTH;
 	directory_with_output = (char*)malloc((sizeof(char)) * dir_and_out_len);
-	HANDLE output_file_handle = open_output_file(argv[1], input_file_size,directory_with_output,dir_and_out_len,directory); //initializing the output file, the output file directory
+	set_up_Directory_with_output(argv[1], input_file_size, directory_with_output, dir_and_out_len, directory);				//initializing the output file directory
+	HANDLE output_file_handle = open_output_file(argv[1], input_file_size,directory_with_output,dir_and_out_len,directory); //initializing the output file,
 	HANDLE input_file_handle = open_input_file(argv[1]);							// opening input file for threads to read
 	//---END----------------------------------------------------------------------------------------------------------------------------------------------//
 
@@ -214,7 +217,7 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 			//---------------------------------START--------------------------------------------------------------//
 			printf("we are in a handle");
 			OVERLAPPED ol2 = { 0 };
-			HANDLE output_file_handle = open_output_file(path_of_input, input_file_size,directory_with_output,dir_and_out_len,directory);
+			//HANDLE output_file_handle = open_output_file(path_of_input, input_file_size,directory_with_output,dir_and_out_len,directory); // this function is used only by the main thread to initialize the output file as instructed in the recitation
 			if (FALSE == WriteFile(
 				output_file_handle,
 				buffer,
@@ -225,7 +228,7 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 				printf("WriteFile error: %d\n", GetLastError()); // you can make this better by using GetLastError()
 				return STATUS_CODE_FAILURE;
 			}
-
+		
 
 
 			printf("Thread %d: wait succeeded\n", GetCurrentThreadId());
