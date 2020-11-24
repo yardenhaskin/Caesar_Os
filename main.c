@@ -112,9 +112,9 @@ main(int argc, char* argv[])
 		p_thread_params->key = key;
 		p_thread_params->input_file_size = input_file_size;
 		//////
-		//strcpy_s(p_thread_params->directory_with_output, input_file_size, directory_with_output);
-		//p_thread_params->dir_and_out_len = dir_and_out_len;
-		//strcpy_s(p_thread_params->directory, input_file_size, directory);
+		strcpy_s(p_thread_params->directory_with_output, input_file_size, directory_with_output);
+		p_thread_params->dir_and_out_len = dir_and_out_len;
+		strcpy_s(p_thread_params->directory, input_file_size, directory);
 
 		aThread[i] = CreateThread(
 			NULL,       // default security attributes
