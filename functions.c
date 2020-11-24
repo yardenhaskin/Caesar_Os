@@ -1,14 +1,25 @@
 #include <stdio.h>
 
-
+//our problem with the decoding was that the definition of
+//modulo for negative numbers doesn't give us the expected value
+//I imlemented shift of the code if it gets negative
 char decode_small_letters(char letter, int key) {
-	return ('a' + (letter - 'a' - key) % 26);
+	int code = letter - 'a' - key;
+	while (code < 0)
+		code += 26;
+	return ('a' + (code) % 26);
 }
 char decode_capital_letters(char letter, int key) {
-	return  ('A' + (letter - 'A' - key) % 26);
+	int code = letter - 'A' - key;
+	while (code < 0)
+		code += 26;
+	return  ('A' + (code) % 26);
 }
 char decode_number(char letter, int key) {
-	return ('0' + (letter - '0' - key) % 10);
+	int code = letter - '0' - key;
+	while (code < 0)
+		code += 10;
+	return ('0' + (code) % 10);
 }
 
 char encode_small_letters(char letter, int key) {

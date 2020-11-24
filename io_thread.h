@@ -25,6 +25,12 @@ typedef struct
 	int arr[2];
 	char* full_path_of_input;
 	char* full_path_of_output;
+	int key;
+	int input_file_size;
+	int dir_and_out_len;
+	char* directory_with_output;
+	const char* directory;
+	
 
 } IO_THREAD_params_t;
 

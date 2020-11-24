@@ -82,6 +82,8 @@ void find_input_file_sizes(char* directory_with_input, int* p_num_of_rows, LONG*
 	{
 		num_of_rows += 1;	
 	}
+	*p_input_file_size = input_file_size;
+	*p_num_of_rows = num_of_rows;
 	fclose(p_stream_input);
 	//return input_file_size; //without EOF symbol
 }
@@ -92,7 +94,7 @@ HANDLE open_output_file(char* directory_with_input, LONG input_file_size, char* 
 	//int int_key = atoi(key);
 	errno_t retval_of_strcat1 =NULL, retval_of_strcat2 = NULL;
 	const char* output_file_name = "decrypted.txt";
-	*directory_with_output = '\0';
+	directory_with_output = '\0';
 	retval_of_strcat1 = strcat_s(directory_with_output, dir_and_out_len, directory);
 	retval_of_strcat2 = strcat_s(directory_with_output, dir_and_out_len, output_file_name);
 

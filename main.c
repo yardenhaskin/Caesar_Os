@@ -82,51 +82,11 @@ main(int argc, char* argv[])
 	//(((((((((((((T h e s e    m a d e    b y      Y a r d e n))))))))))))
 	//HANDLE aThread=(HANDLE*)malloc(sizeof(HANDLE)*num_of_threads);// at the moment I chose arbitrary
 	//size of 4, but it actually needs to be allocated
-	HANDLE aThread[4];
-	//printf("%d", 6666);
-	//printf("%d", sizeof(aThread));
+	HANDLE *aThread=(HANDLE*)malloc(sizeof(HANDLE)* num_of_threads);
 	DWORD ThreadID;
 	int i;
-	//---END----------------------------------------------------------------------------------------------------------------------------------------------//
 
-
-	//Reading the input file:
-	//---------------------------------START--------------------------------------------------------------//
-	char* buffer = (char*)calloc(input_file_size, sizeof(char)); // initializing the Buffer
-	OVERLAPPED ol = { 0 };
 	
-	if (FALSE == ReadFile(input_file_handle,					//A handle to the  file
-		buffer,							//A pointer to the buffer that receives the data read from a file 
-		input_file_size,						//The maximum number of bytes to be read.				
-		&ol,									//A pointer to the variable that receives the number of bytes read when using a synchronous hFile parameter.
-		NULL))								//A pointer to an OVERLAPPED structure is required if the hFile parameter was opened with FILE_FLAG_OVERLAPPED, otherwise it can be NULL.
-	{
-		printf("Error, Unable to read from file\n"); // you can make this better by using GetLastError()
-		return STATUS_CODE_FAILURE;
-	}
-	//---------------------------------END------------------------------------------------------------------//
-
-	//Decoding:
-	//---------------------------------START--------------------------------------------------------------//
-	for (int i = 0; i <= input_file_size; i++)
-	{
-		buffer[i] = decode(buffer[i], key);
-	}
-	//---------------------------------END------------------------------------------------------------------//
-
-	//writing to the output file:
-	//---------------------------------START--------------------------------------------------------------//
-	OVERLAPPED ol2 = { 0 };
-	if (FALSE == WriteFile(
-		output_file_handle,
-		buffer,
-		input_file_size,
-		&ol2,
-		NULL))
-	{
-		printf("Error, Unable to read from file\n"); // you can make this better by using GetLastError()
-		return STATUS_CODE_FAILURE;
-	}
 	//---------------------------------END------------------------------------------------------------------//
 
 	ghSemaphore = CreateSemaphore(
@@ -149,12 +109,18 @@ main(int argc, char* argv[])
 		p_thread_params->arr[1] = range_for_every_thread_array[i][1];
 		p_thread_params->full_path_of_input = argv[1];
 		p_thread_params->full_path_of_output = directory_with_output;
+		p_thread_params->key = key;
+		p_thread_params->input_file_size = input_file_size;
+		//////
+		//strcpy_s(p_thread_params->directory_with_output, input_file_size, directory_with_output);
+		//p_thread_params->dir_and_out_len = dir_and_out_len;
+		//strcpy_s(p_thread_params->directory, input_file_size, directory);
 
 		aThread[i] = CreateThread(
 			NULL,       // default security attributes
 			0,          // default stack size
 			(LPTHREAD_START_ROUTINE)ThreadProc,
-			p_thread_params,       // here we need to give arguments
+			p_thread_params,        // here we need to give arguments
 			0,          // default creation flags
 			&ThreadID); // receive thread identifier (shouldn't this be different for every thread???)
 
@@ -171,7 +137,7 @@ main(int argc, char* argv[])
 	//third argument:If this parameter is TRUE, the function returns when the state of all objects in the lpHandles array is signaled
 	//forth argument :The time-out interval, in milliseconds. was chosen arbitrary
 	WaitForMultipleObjects(num_of_threads, aThread, TRUE, 20000);
-	for (i = 0; i < num_of_threads; i++)
+	for (i = 1; i <= num_of_threads; i++)
 		CloseHandle(aThread[i]);
 
 	//after all the handles were closed we need to close the semaphore handle
@@ -196,20 +162,69 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 		dwWaitResult = WaitForSingleObject(
 			ghSemaphore,   // handle to semaphore
 			0L);           // zero-second time-out interval
-
+	
 		IO_THREAD_params_t* p_params;
 		p_params = (IO_THREAD_params_t*)lpParam;
+		//HANDLE input_file= (HANFLE*)
+		int key = p_params->key;
+		int input_file_size = p_params->input_file_size;
 		int start_char = p_params->arr[0];
 		int end_char = p_params->arr[1];
-		//p_params->full_path_of_input;
-		//p_params->full_path_of_output;
+		char* path_of_input = p_params->full_path_of_input;
+		char* path_of_output = p_params->full_path_of_output;
+		////
+		char* directory_with_output =p_params-> directory_with_output;
+		int dir_and_out_len =p_params-> dir_and_out_len;
+		const char* directory = p_params->directory;
+		HANDLE input_file_handle = open_input_file(path_of_input);
 
 		switch (dwWaitResult)
 		{
 			// The semaphore object was signaled.
 		case WAIT_OBJECT_0:
-			// TODO: Perform task
-			//SetFilePointer(, start_char, NULL, FILE_BEGIN);
+			SetFilePointer(input_file_handle, start_char, NULL, 1);
+
+			//Reading the input file:
+	//---------------------------------START--------------------------------------------------------------//
+			char* buffer = (char*)calloc(input_file_size, sizeof(char)); // initializing the Buffer
+			OVERLAPPED ol = { 0 };
+
+			if (FALSE == ReadFile(input_file_handle,					//A handle to the  file
+				buffer,							//A pointer to the buffer that receives the data read from a file 
+				input_file_size,						//The maximum number of bytes to be read.				
+				&ol,									//A pointer to the variable that receives the number of bytes read when using a synchronous hFile parameter.
+				NULL))								//A pointer to an OVERLAPPED structure is required if the hFile parameter was opened with FILE_FLAG_OVERLAPPED, otherwise it can be NULL.
+			{
+				printf("readFile error: %d\n", GetLastError()); // you can make this better by using GetLastError()
+				return STATUS_CODE_FAILURE;
+			}
+			//---------------------------------END------------------------------------------------------------------//
+
+			printf("%s", buffer);
+
+			//Decoding:
+			//---------------------------------START--------------------------------------------------------------//
+			for (int i = start_char; i <= end_char; i++)
+			{
+				buffer[i] = decode(buffer[i], key);
+			}
+			//---------------------------------END------------------------------------------------------------------//
+
+			//writing to the output file:
+			//---------------------------------START--------------------------------------------------------------//
+			printf("we are in a handle");
+			OVERLAPPED ol2 = { 0 };
+			HANDLE output_file_handle = open_output_file(path_of_input, input_file_size,directory_with_output,dir_and_out_len,directory);
+			if (FALSE == WriteFile(
+				output_file_handle,
+				buffer,
+				input_file_size,
+				&ol2,
+				NULL))
+			{
+				printf("WriteFile error: %d\n", GetLastError()); // you can make this better by using GetLastError()
+				return STATUS_CODE_FAILURE;
+			}
 
 
 
@@ -217,7 +232,7 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 			bContinue = FALSE;
 
 			// Simulate thread spending time on task
-			Sleep(5);
+			//Sleep(5);
 
 			// Release the semaphore when task is finished
 
