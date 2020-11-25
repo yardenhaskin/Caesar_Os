@@ -85,8 +85,7 @@ main(int argc, char* argv[])
 	//(((((((((((((T h e s e    m a d e    b y      Y a r d e n))))))))))))
 	//HANDLE aThread=(HANDLE*)malloc(sizeof(HANDLE)*num_of_threads);// at the moment I chose arbitrary
 	//size of 4, but it actually needs to be allocated
-	HANDLE* aThread[10];
-	//= (HANDLE*)malloc(sizeof(HANDLE) * num_of_threads);
+	HANDLE* aThread =(HANDLE*)malloc(sizeof(HANDLE) * num_of_threads);
 	DWORD ThreadID;
 	int i;
 
