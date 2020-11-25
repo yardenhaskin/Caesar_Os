@@ -52,10 +52,6 @@ char encode(char letter, int key) {
 	return letter;
 }
 
-
-
-
-
 void start_end_thread_array(int num_of_rows, int num_of_threads, int* rows_per_thread_array, int** range_for_every_thread_array)
 {
 	int rows_per_thread_base = (int)(num_of_rows / num_of_threads);

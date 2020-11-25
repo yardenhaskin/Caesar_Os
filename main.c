@@ -85,7 +85,8 @@ main(int argc, char* argv[])
 	//(((((((((((((T h e s e    m a d e    b y      Y a r d e n))))))))))))
 	//HANDLE aThread=(HANDLE*)malloc(sizeof(HANDLE)*num_of_threads);// at the moment I chose arbitrary
 	//size of 4, but it actually needs to be allocated
-	HANDLE *aThread=(HANDLE*)malloc(sizeof(HANDLE)* num_of_threads);
+	HANDLE* aThread[10];
+	//= (HANDLE*)malloc(sizeof(HANDLE) * num_of_threads);
 	DWORD ThreadID;
 	int i;
 
@@ -108,16 +109,19 @@ main(int argc, char* argv[])
 		//int* curPtr = range_for_every_thread_array[i];
 
 		/* Prepare parameters for thread */
+		////this is not working at the moment. I get arr[1] =0, arr[0] =1
 		p_thread_params->arr[0] = range_for_every_thread_array[i][0];
+		//printf("%d", p_thread_params->arr[0]);
 		p_thread_params->arr[1] = range_for_every_thread_array[i][1];
+		//printf("%d", p_thread_params->arr[1]);
 		p_thread_params->full_path_of_input = argv[1];
 		p_thread_params->full_path_of_output = directory_with_output;
 		p_thread_params->key = key;
 		p_thread_params->input_file_size = input_file_size;
 		//////
-		strcpy_s(p_thread_params->directory_with_output, input_file_size, directory_with_output);
-		p_thread_params->dir_and_out_len = dir_and_out_len;
-		strcpy_s(p_thread_params->directory, input_file_size, directory);
+		//strcpy_s(p_thread_params->directory_with_output, input_file_size, directory_with_output);
+		//p_thread_params->dir_and_out_len = dir_and_out_len;
+		//strcpy_s(p_thread_params->directory, input_file_size, directory);
 
 		aThread[i] = CreateThread(
 			NULL,       // default security attributes
@@ -139,7 +143,8 @@ main(int argc, char* argv[])
 	//second argument: An array of object handles
 	//third argument:If this parameter is TRUE, the function returns when the state of all objects in the lpHandles array is signaled
 	//forth argument :The time-out interval, in milliseconds. was chosen arbitrary
-	WaitForMultipleObjects(num_of_threads, aThread, TRUE, 20000);
+	WaitForMultipleObjects(num_of_threads, aThread, TRUE, INFINITE);
+	printf("WaitForMultipleObjects error: %d\n", GetLastError());
 	for (i = 1; i <= num_of_threads; i++)
 		CloseHandle(aThread[i]);
 
@@ -152,9 +157,6 @@ main(int argc, char* argv[])
 
 DWORD WINAPI ThreadProc(LPVOID lpParam)
 {
-
-	//int arr[2] = &lpParam; 
-
 	DWORD dwWaitResult;
 	BOOL bContinue = TRUE;
 
@@ -173,9 +175,14 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 		int input_file_size = p_params->input_file_size;
 		int start_char = p_params->arr[0];
 		int end_char = p_params->arr[1];
+		if (start_char >= end_char) {
+			break;
+		}
 		char* path_of_input = p_params->full_path_of_input;
 		char* path_of_output = p_params->full_path_of_output;
-		////
+		//int length = end_char - start_char + 1;
+		//int length = (start_char-'0') - (end_char-'0') + 1;
+		//printf("%d", length);
 		char* directory_with_output =p_params-> directory_with_output;
 		int dir_and_out_len =p_params-> dir_and_out_len;
 		const char* directory = p_params->directory;
@@ -203,14 +210,18 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 			}
 			//---------------------------------END------------------------------------------------------------------//
 
-			printf("%s", buffer);
+			//printf("%s", buffer);
 
 			//Decoding:
+			printf("%c", decode(buffer[0], key));
 			//---------------------------------START--------------------------------------------------------------//
 			for (int i = start_char; i <= end_char; i++)
 			{
-				buffer[i] = decode(buffer[i], key);
+				char decodedChar = decode(buffer[i], key);
+				printf("%c", decodedChar);
+				buffer[i] = decodedChar;
 			}
+			printf("%s", buffer);
 			//---------------------------------END------------------------------------------------------------------//
 
 			//writing to the output file:
@@ -218,18 +229,16 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 			printf("we are in a handle");
 			OVERLAPPED ol2 = { 0 };
 			//HANDLE output_file_handle = open_output_file(path_of_input, input_file_size,directory_with_output,dir_and_out_len,directory); // this function is used only by the main thread to initialize the output file as instructed in the recitation
-			if (FALSE == WriteFile(
-				output_file_handle,
-				buffer,
-				input_file_size,
-				&ol2,
-				NULL))
-			{
-				printf("WriteFile error: %d\n", GetLastError()); // you can make this better by using GetLastError()
-				return STATUS_CODE_FAILURE;
-			}
-		
-
+			//if (FALSE == WriteFile(
+			//	output_file_handle,
+			//	buffer,
+			//	input_file_size,
+			//	&ol2,
+			//	NULL))
+			//{
+			//	printf("WriteFile error: %d\n", GetLastError()); // you can make this better by using GetLastError()
+			//	return STATUS_CODE_FAILURE;
+			//}	
 
 			printf("Thread %d: wait succeeded\n", GetCurrentThreadId());
 			bContinue = FALSE;
@@ -251,6 +260,10 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 			// The semaphore was nonsignaled, so a time-out occurred.
 		case WAIT_TIMEOUT:
 			printf("Thread %d: wait timed out\n", GetCurrentThreadId());
+			break;
+		default:
+			printf("WaitForSingleObject error: %d\n", GetLastError());
+			printf("%d", dwWaitResult);
 			break;
 		}
 	}
