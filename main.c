@@ -75,21 +75,32 @@ int main(int argc, char* argv[])
 	//---START---------------------------------------------------------------------------------------------------------------------------------------//
 	//IO_THREAD_params_t* p_thread_params;
 	//p_thread_params = (IO_THREAD_params_t*)malloc(sizeof(IO_THREAD_params_t));
-	//if (NULL == p_thread_params)
-	//{
-	//	printf("Error when allocating memory");
-	//	return STATUS_CODE_FAILURE;
-	//}
+	
 	IO_THREAD_params_t** p_thread_params= (IO_THREAD_params_t**)calloc(num_of_threads+1,sizeof(IO_THREAD_params_t*));
+	if (NULL == p_thread_params)
+	{
+		printf("Error when allocating memory");
+		return STATUS_CODE_FAILURE;
+	}
 	for (int i = 1; i <= num_of_threads; i++)
 	{
 		p_thread_params[i]= malloc(sizeof(IO_THREAD_params_t));
+		if (NULL == p_thread_params[i])
+		{
+			printf("Error when allocating memory");
+			return STATUS_CODE_FAILURE;
+		}
 	}
 	//---END----------------------------------------------------------------------------------------------------------------------------------------------//
 
 
 //---START---------------------------------------------------------------------------------------------------------------------------------------//
 	HANDLE* aThread = (HANDLE*)malloc(sizeof(HANDLE) * (num_of_threads + 1));
+	if (NULL == aThread)
+	{
+		printf("Error when allocating memory");
+		return STATUS_CODE_FAILURE;
+	}
 	DWORD ThreadID;
 	int i;
 	//---------------------------------END------------------------------------------------------------------//
@@ -121,7 +132,7 @@ int main(int argc, char* argv[])
 			NULL,       // default security attributes
 			0,          // default stack size
 			(LPTHREAD_START_ROUTINE)ThreadProc,
-			(LPVOID) & (p_thread_params[i]),        // here we need to give arguments
+			(LPVOID)  (p_thread_params[i]),        // here we need to give arguments
 			0,          // default creation flags
 			&ThreadID); // receive thread identifier (shouldn't this be different for every thread???)
 
@@ -132,6 +143,7 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 
+		//ThreadProc((p_thread_params[i]));
 	}
 	// Wait for all threads to terminate.arguments :
 	//first argument : The number of object handles in the array pointed to by lpHandle
@@ -139,8 +151,9 @@ int main(int argc, char* argv[])
 	//third argument:If this parameter is TRUE, the function returns when the state of all objects in the lpHandles array is signaled
 	//forth argument :The time-out interval, in milliseconds. was chosen arbitrary
 
-	WaitForMultipleObjects(num_of_threads, aThread, TRUE, INFINITE);
-	printf("WaitForMultipleObjects error: %d\n", GetLastError());
+	//WaitForMultipleObjects(num_of_threads, aThread, TRUE, INFINITE);
+	//printf("WaitForMultipleObjects error: %d\n", GetLastError());
+	Sleep(20);
 	for (i = 1; i <= num_of_threads; i++)
 	{
 		CloseHandle(aThread[i]);
@@ -155,8 +168,6 @@ int main(int argc, char* argv[])
 
 DWORD WINAPI ThreadProc(LPVOID lpParam)
 {
-	DWORD dwWaitResult;
-	BOOL bContinue = TRUE;
 	IO_THREAD_params_t* p_params;
 	p_params = (IO_THREAD_params_t*)lpParam;
 	int start_char = p_params->arr[0];
@@ -164,25 +175,8 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 	char* path_of_input = p_params->full_path_of_input;
 	char* path_of_output = p_params->full_path_of_output;
 	int key = p_params->key;
-	printf("Entered the thread function\n");
-	printf("this is the start char:%d,\n", start_char);
-	printf("this is the End char:%d,\n", end_char);
 	HANDLE output_file_handle = open_output_file_in_threads(path_of_output);
 	HANDLE input_file_handle = open_input_file(path_of_input);
-
-	while (bContinue)
-	{
-		// Try to enter the semaphore gate.
-
-		dwWaitResult = WaitForSingleObject(
-			ghSemaphore,   // handle to semaphore
-			0L);           // zero-second time-out interval
-
-
-		switch (dwWaitResult)
-		{
-			// The semaphore object was signaled.
-		case WAIT_OBJECT_0:
 
 			if (start_char <= end_char)
 			{
@@ -235,35 +229,6 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 			CloseHandle(output_file_handle);
 			CloseHandle(input_file_handle);
 
-
-			//printf("Thread %d: wait succeeded\n", GetCurrentThreadId());
-			bContinue = FALSE;
-
-			// Simulate thread spending time on task
-			//Sleep(5);
-
-			// Release the semaphore when task is finished
-
-			if (!ReleaseSemaphore(
-				ghSemaphore,  // handle to semaphore
-				1,            // increase count by one
-				NULL))       // not interested in previous count
-			{
-				printf("ReleaseSemaphore error: %d\n", GetLastError());
-			}
-			break;
-
-			// The semaphore was nonsignaled, so a time-out occurred.
-		case WAIT_TIMEOUT:
-			printf("Thread %d: wait timed out\n", GetCurrentThreadId());
-			break;
-		default:
-			printf("WaitForSingleObject error: %d\n", GetLastError());
-			printf("%d", dwWaitResult);
-			break;
-		}
-	}
-	return TRUE;
 }
 
 
