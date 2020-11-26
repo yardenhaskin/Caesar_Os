@@ -80,7 +80,11 @@ int main(int argc, char* argv[])
 	//	printf("Error when allocating memory");
 	//	return STATUS_CODE_FAILURE;
 	//}
-	IO_THREAD_params_t p_thread_params[4];
+	IO_THREAD_params_t** p_thread_params= (IO_THREAD_params_t**)calloc(num_of_threads+1,sizeof(IO_THREAD_params_t*));
+	for (int i = 1; i <= num_of_threads; i++)
+	{
+		p_thread_params[i]= malloc(sizeof(IO_THREAD_params_t));
+	}
 	//---END----------------------------------------------------------------------------------------------------------------------------------------------//
 
 
@@ -89,35 +93,35 @@ int main(int argc, char* argv[])
 	DWORD ThreadID;
 	int i;
 	//---------------------------------END------------------------------------------------------------------//
+	
+	//ghSemaphore = CreateSemaphore(
+	//	NULL,           // default security attributes
+	//	num_of_threads,  // initial count
+	//	num_of_threads,  // maximum count
+	//	NULL);          // unnamed semaphore
 
-	ghSemaphore = CreateSemaphore(
-		NULL,           // default security attributes
-		num_of_threads,  // initial count
-		num_of_threads,  // maximum count
-		NULL);          // unnamed semaphore
-
-	if (ghSemaphore == NULL)
-	{
-		printf("CreateSemaphore error: %d\n", GetLastError());
-		return 1;
-	}
+	//if (ghSemaphore == NULL)
+	//{
+	//	printf("CreateSemaphore error: %d\n", GetLastError());
+	//	return 1;
+	//}
 	for (i = 1; i <= num_of_threads; i++)
 	{
 
 
 		/* Prepare parameters for thread */
-		(p_thread_params[i]).arr[0] = range_for_every_thread_array[i][0];
-		(p_thread_params[i]).arr[1] = range_for_every_thread_array[i][1];
-		(p_thread_params[i]).full_path_of_input = argv[1];
-		(p_thread_params[i]).full_path_of_output = directory_with_output;
-		(p_thread_params[i]).key = key;
+		(p_thread_params[i])->arr[0] = range_for_every_thread_array[i][0];
+		(p_thread_params[i])->arr[1] = range_for_every_thread_array[i][1];
+		(p_thread_params[i])->full_path_of_input = argv[1];
+		(p_thread_params[i])->full_path_of_output = directory_with_output;
+		(p_thread_params[i])->key = key;
 
 
 		aThread[i] = CreateThread(
 			NULL,       // default security attributes
 			0,          // default stack size
 			(LPTHREAD_START_ROUTINE)ThreadProc,
-			p_thread_params,        // here we need to give arguments
+			(LPVOID) & (p_thread_params[i]),        // here we need to give arguments
 			0,          // default creation flags
 			&ThreadID); // receive thread identifier (shouldn't this be different for every thread???)
 
@@ -135,7 +139,7 @@ int main(int argc, char* argv[])
 	//third argument:If this parameter is TRUE, the function returns when the state of all objects in the lpHandles array is signaled
 	//forth argument :The time-out interval, in milliseconds. was chosen arbitrary
 
-	WaitForMultipleObjects(num_of_threads, aThread + 1, TRUE, INFINITE);
+	WaitForMultipleObjects(num_of_threads, aThread, TRUE, INFINITE);
 	printf("WaitForMultipleObjects error: %d\n", GetLastError());
 	for (i = 1; i <= num_of_threads; i++)
 	{
@@ -144,7 +148,7 @@ int main(int argc, char* argv[])
 	free(aThread);
 
 	//after all the handles were closed we need to close the semaphore handle
-	CloseHandle(ghSemaphore);
+	//CloseHandle(ghSemaphore);
 
 	return 0;
 }
