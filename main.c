@@ -134,7 +134,7 @@ int main(int argc, char* argv[])
 			(LPTHREAD_START_ROUTINE)ThreadProc,
 			(LPVOID)  (p_thread_params[i]),        // here we need to give arguments
 			0,          // default creation flags
-			&ThreadID[i]); // receive thread identifier (shouldn't this be different for every thread???)
+			&ThreadID[i]); // receive thread identifier 
 
 		if (aThread[i] == NULL)
 		{
@@ -206,7 +206,6 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 				for (int i = 0; i < input_file_size; i++)
 				{
 					buffer[i] = decode(buffer[i], key);
-					printf("this is buffer :%c\n", buffer[i]);
 				}
 				//---------------------------------END------------------------------------------------------------------//
 
