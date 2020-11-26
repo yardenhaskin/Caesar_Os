@@ -63,7 +63,7 @@ void find_input_file_sizes(char* directory_with_input, int* p_num_of_rows, LONG*
 	}
 	char c;
 	int flag;
-	while (c=getc(p_stream_input) != EOF)
+	while ((c=fgetc(p_stream_input)) != EOF)
 	{
 		if (c == '\n')
 		{
@@ -132,7 +132,7 @@ HANDLE open_output_file(char* directory_with_input, LONG input_file_size, char* 
 	SetEndOfFile(output_file_handle);
 	SetFilePointer(output_file_handle, 0, NULL, FILE_BEGIN);
 	return output_file_handle;
-	//CloseHandle(output_file_handle);
+	
 }
 
 HANDLE open_input_file(char* directory_with_input)
@@ -152,3 +152,15 @@ HANDLE open_input_file(char* directory_with_input)
 	//CloseHandle(input_file_handle);
 }
 
+HANDLE open_output_file_in_threads(char* directory_with_output)
+{
+	LPCSTR lp_output_file_name = (LPCSTR)directory_with_output;
+	HANDLE output_file_handle = CreateFileA(lp_output_file_name, GENERIC_ALL,
+		(FILE_SHARE_READ | FILE_SHARE_WRITE),
+		NULL,
+		CREATE_ALWAYS,
+		FILE_ATTRIBUTE_NORMAL,
+		NULL);
+	return output_file_handle;
+	//	CloseHandle(output_file_handle);
+}

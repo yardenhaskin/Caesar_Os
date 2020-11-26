@@ -91,7 +91,7 @@ void make_sizes_of_rows_array(char* directory_with_input, int* sizes_of_rows_arr
 		return;
 	}
 	char c;
-	while (c = getc(p_stream_input) != EOF)
+	while ((c = getc(p_stream_input)) != EOF)
 	{
 
 
@@ -137,7 +137,7 @@ void start_end_thread_array_in_chars(int* sizes_of_rows_array, int** range_for_e
 		{
 			sum = sum + sizes_of_rows_array[k];
 		}
-		range_for_every_thread_array[i][1] = sum;
+		range_for_every_thread_array[i][1] = sum + range_for_every_thread_array[i - 1][1];
 		sum = 0;
 	}
 }
