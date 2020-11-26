@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
 	HANDLE output_file_handle = open_output_file(argv[1], input_file_size,directory_with_output,dir_and_out_len,directory); //initializing the output file,
 	CloseHandle(output_file_handle);
 	HANDLE input_file_handle = open_input_file(argv[1]);							// opening input file for threads to read
-	CloseHandle(input_file_handle);
+	
 	//---END----------------------------------------------------------------------------------------------------------------------------------------------//
 
 	
@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
 		printf("Error when allocating memory");
 		return STATUS_CODE_FAILURE;
 	}
-	DWORD ThreadID;
+	DWORD ThreadID[5];
 	int i;
 	//---------------------------------END------------------------------------------------------------------//
 	
@@ -134,7 +134,7 @@ int main(int argc, char* argv[])
 			(LPTHREAD_START_ROUTINE)ThreadProc,
 			(LPVOID)  (p_thread_params[i]),        // here we need to give arguments
 			0,          // default creation flags
-			&ThreadID); // receive thread identifier (shouldn't this be different for every thread???)
+			&ThreadID[i]); // receive thread identifier (shouldn't this be different for every thread???)
 
 		if (aThread[i] == NULL)
 		{
@@ -143,7 +143,6 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 
-		//ThreadProc((p_thread_params[i]));
 	}
 	// Wait for all threads to terminate.arguments :
 	//first argument : The number of object handles in the array pointed to by lpHandle
@@ -153,7 +152,7 @@ int main(int argc, char* argv[])
 
 	//WaitForMultipleObjects(num_of_threads, aThread, TRUE, INFINITE);
 	//printf("WaitForMultipleObjects error: %d\n", GetLastError());
-	Sleep(20);
+	Sleep(2000);
 	for (i = 1; i <= num_of_threads; i++)
 	{
 		CloseHandle(aThread[i]);
@@ -177,18 +176,19 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 	int key = p_params->key;
 	HANDLE output_file_handle = open_output_file_in_threads(path_of_output);
 	HANDLE input_file_handle = open_input_file(path_of_input);
-
+	int input_file_size = end_char - (start_char - 1);
+	char* buffer = (char*)calloc(input_file_size, sizeof(char)); // initializing the Buffer
+	OVERLAPPED ol = { 0 };
 			if (start_char <= end_char)
 			{
 
 				SetFilePointer(input_file_handle, start_char, NULL, FILE_BEGIN);
 				SetFilePointer(output_file_handle, start_char, NULL, FILE_BEGIN);
-				int input_file_size = end_char - (start_char - 1);
+				
 
 				//Reading the input file:
 				//---------------------------------START--------------------------------------------------------------//
-				char* buffer = (char*)calloc(input_file_size, sizeof(char)); // initializing the Buffer
-				OVERLAPPED ol = { 0 };
+				
 
 				if (FALSE == ReadFile(input_file_handle,					//A handle to the  file
 					buffer,							//A pointer to the buffer that receives the data read from a file 
@@ -203,7 +203,7 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 
 				//Decoding:
 				//---------------------------------START--------------------------------------------------------------//
-				for (int i = 0; i <= input_file_size; i++)
+				for (int i = 0; i < input_file_size; i++)
 				{
 					buffer[i] = decode(buffer[i], key);
 					printf("this is buffer :%c\n", buffer[i]);
@@ -226,9 +226,9 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 				}
 				//---------------------------------END------------------------------------------------------------------//
 			}
+			free(buffer);
 			CloseHandle(output_file_handle);
 			CloseHandle(input_file_handle);
-
 }
 
 

@@ -155,10 +155,10 @@ HANDLE open_input_file(char* directory_with_input)
 HANDLE open_output_file_in_threads(char* directory_with_output)
 {
 	LPCSTR lp_output_file_name = (LPCSTR)directory_with_output;
-	HANDLE output_file_handle = CreateFileA(lp_output_file_name, GENERIC_ALL,
-		(FILE_SHARE_READ | FILE_SHARE_WRITE),
+	HANDLE output_file_handle = CreateFileA(lp_output_file_name, GENERIC_WRITE,
+		FILE_SHARE_WRITE,
 		NULL,
-		CREATE_ALWAYS,
+		OPEN_ALWAYS,
 		FILE_ATTRIBUTE_NORMAL,
 		NULL);
 	return output_file_handle;
