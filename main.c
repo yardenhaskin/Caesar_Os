@@ -7,21 +7,31 @@
 #include "io_Thread.h"
 
 HANDLE ghSemaphore; // maybe it is better to initialize it on heap as said in recitation 4
-DWORD WINAPI ThreadProc(LPVOID);
+
 
 const int STATUS_CODE_FAILURE = -1;
 static const int OUTPUT_FILE_NAME_LENGTH = 14;
 
 int main(int argc, char* argv[])
 {
-	if (argc != 4)
+	if (argc != 5)
 	{
 		printf("Error, Invalid number of arguments\n");
 		return STATUS_CODE_FAILURE;
 	}
+	char* operation = argv[4];
+	char op = operation[1];
+
+	if (op !='e' && op !='d')
+	{
+		printf("Error! operation argument must be -d or -e only\n");
+		return STATUS_CODE_FAILURE;
+	}
+
 
 	int key = atoi(argv[2]);														// getting the key as integer
 
+	/*initializes the number of rows and number of chars in input file:*/
 	//---START---------------------------------------------------------------------------------------------------------------------------------------//
 	int num_of_rows = 0;
 	int* p_num_of_rows = &num_of_rows;
@@ -31,7 +41,7 @@ int main(int argc, char* argv[])
 
 	//---END----------------------------------------------------------------------------------------------------------------------------------------------//
 
-
+	/*making array[i]=(size of row i in chars)*/
 	//---START---------------------------------------------------------------------------------------------------------------------------------------//
 	int* sizes_of_rows_array = (int*)calloc(num_of_rows, sizeof(int));			
 	make_sizes_of_rows_array(argv[1], sizes_of_rows_array); //function that makes an array that array[i]=(size of row i in chars)
@@ -44,11 +54,9 @@ int main(int argc, char* argv[])
 
 	int dir_and_out_len = strlen(directory) + OUTPUT_FILE_NAME_LENGTH;
 	directory_with_output = (char*)malloc((sizeof(char)) * dir_and_out_len);
-	set_up_Directory_with_output(argv[1], input_file_size, directory_with_output, dir_and_out_len, directory);				//initializing the output file directory
-	HANDLE output_file_handle = open_output_file(argv[1], input_file_size,directory_with_output,dir_and_out_len,directory); //initializing the output file,
-	CloseHandle(output_file_handle);
-	HANDLE input_file_handle = open_input_file(argv[1]);							// opening input file for threads to read
-	
+	set_up_Directory_with_output(argv[1], input_file_size, directory_with_output, dir_and_out_len, directory,op);				//initializing the output file directory
+	//HANDLE output_file_handle = open_output_file(argv[1], input_file_size,directory_with_output,dir_and_out_len,directory); //initializing the output file,
+	//CloseHandle(output_file_handle);
 	//---END----------------------------------------------------------------------------------------------------------------------------------------------//
 
 	
@@ -56,7 +64,7 @@ int main(int argc, char* argv[])
 	//Initializing an array of 2d arrays 
 	//---------------------------------START--------------------------------------------------------------//
 	// range_for_every_thread_array[0] array is always [0,0] , 
-	//range_for_every_thread_array[i]=[start,end] shows the start and end row that thread i must read/write to
+	//range_for_every_thread_array[i]=[start,end] shows the start and end char that thread i must read/write to
 	// if start>END thread must not write/read any lines!
 	// range_for_every_thread_array= [[0,0],
 	//							[,],
@@ -71,11 +79,8 @@ int main(int argc, char* argv[])
 	start_end_thread_array_in_chars(sizes_of_rows_array, range_for_every_thread_array,num_of_threads); // Updates range_for_every_thread_array to chars counting instead of rows.
 	//---------------------------------END------------------------------------------------------------------//
 
-
+	/*Initializing Thread parameters:*/
 	//---START---------------------------------------------------------------------------------------------------------------------------------------//
-	//IO_THREAD_params_t* p_thread_params;
-	//p_thread_params = (IO_THREAD_params_t*)malloc(sizeof(IO_THREAD_params_t));
-	
 	IO_THREAD_params_t** p_thread_params= (IO_THREAD_params_t**)calloc(num_of_threads+1,sizeof(IO_THREAD_params_t*));
 	if (NULL == p_thread_params)
 	{
@@ -91,35 +96,28 @@ int main(int argc, char* argv[])
 			return STATUS_CODE_FAILURE;
 		}
 	}
-	//---END----------------------------------------------------------------------------------------------------------------------------------------------//
 
-
-//---START---------------------------------------------------------------------------------------------------------------------------------------//
 	HANDLE* aThread = (HANDLE*)malloc(sizeof(HANDLE) * (num_of_threads + 1));
 	if (NULL == aThread)
 	{
 		printf("Error when allocating memory");
 		return STATUS_CODE_FAILURE;
 	}
-	DWORD ThreadID[5];
-	int i;
-	//---------------------------------END------------------------------------------------------------------//
-	
-	//ghSemaphore = CreateSemaphore(
-	//	NULL,           // default security attributes
-	//	num_of_threads,  // initial count
-	//	num_of_threads,  // maximum count
-	//	NULL);          // unnamed semaphore
+	DWORD* ThreadID = (DWORD*)malloc(sizeof(DWORD) * (num_of_threads + 1));
+	if (NULL == ThreadID)
+	{
+		printf("Error when allocating memory");
+		return STATUS_CODE_FAILURE;
+	}
 
-	//if (ghSemaphore == NULL)
-	//{
-	//	printf("CreateSemaphore error: %d\n", GetLastError());
-	//	return 1;
-	//}
+	int i;
+	//---------------------------------END------------------------------------------------------------------------------------------------------//
+	
+
+	/*Creating Threads:*/
+	//---START---------------------------------------------------------------------------------------------------------------------------------------//
 	for (i = 1; i <= num_of_threads; i++)
 	{
-
-
 		/* Prepare parameters for thread */
 		(p_thread_params[i])->arr[0] = range_for_every_thread_array[i][0];
 		(p_thread_params[i])->arr[1] = range_for_every_thread_array[i][1];
@@ -144,91 +142,25 @@ int main(int argc, char* argv[])
 		}
 
 	}
-	// Wait for all threads to terminate.arguments :
-	//first argument : The number of object handles in the array pointed to by lpHandle
-	//second argument: An array of object handles
-	//third argument:If this parameter is TRUE, the function returns when the state of all objects in the lpHandles array is signaled
-	//forth argument :The time-out interval, in milliseconds. was chosen arbitrary
-
-	//WaitForMultipleObjects(num_of_threads, aThread, TRUE, INFINITE);
-	//printf("WaitForMultipleObjects error: %d\n", GetLastError());
-	Sleep(2000);
+	Sleep(2);
 	for (i = 1; i <= num_of_threads; i++)
 	{
 		CloseHandle(aThread[i]);
 	}
 	free(aThread);
-
-	//after all the handles were closed we need to close the semaphore handle
-	//CloseHandle(ghSemaphore);
+	free(sizes_of_rows_array);
+	free(rows_per_thread_array);
+	for (int i = 1; i <= num_of_threads; i++)
+		free(p_thread_params[i]);	
+	free(p_thread_params);
+	free(ThreadID);
+	for (int i = 0; i <= num_of_threads; i++)
+		free(range_for_every_thread_array[i]);
 
 	return 0;
 }
 
-DWORD WINAPI ThreadProc(LPVOID lpParam)
-{
-	IO_THREAD_params_t* p_params;
-	p_params = (IO_THREAD_params_t*)lpParam;
-	int start_char = p_params->arr[0];
-	int end_char = p_params->arr[1];
-	char* path_of_input = p_params->full_path_of_input;
-	char* path_of_output = p_params->full_path_of_output;
-	int key = p_params->key;
-	HANDLE output_file_handle = open_output_file_in_threads(path_of_output);
-	HANDLE input_file_handle = open_input_file(path_of_input);
-	int input_file_size = end_char - (start_char - 1);
-	char* buffer = (char*)calloc(input_file_size, sizeof(char)); // initializing the Buffer
-	OVERLAPPED ol = { 0 };
-			if (start_char <= end_char)
-			{
 
-				SetFilePointer(input_file_handle, start_char, NULL, FILE_BEGIN);
-				SetFilePointer(output_file_handle, start_char, NULL, FILE_BEGIN);
-				
-
-				//Reading the input file:
-				//---------------------------------START--------------------------------------------------------------//
-				
-
-				if (FALSE == ReadFile(input_file_handle,					//A handle to the  file
-					buffer,							//A pointer to the buffer that receives the data read from a file 
-					input_file_size,						//The maximum number of bytes to be read.				
-					&ol,									//A pointer to the variable that receives the number of bytes read when using a synchronous hFile parameter.
-					NULL))								//A pointer to an OVERLAPPED structure is required if the hFile parameter was opened with FILE_FLAG_OVERLAPPED, otherwise it can be NULL.
-				{
-					printf("readFile error: %d\n", GetLastError()); // you can make this better by using GetLastError()
-					return STATUS_CODE_FAILURE;
-				}
-				//---------------------------------END------------------------------------------------------------------//
-
-				//Decoding:
-				//---------------------------------START--------------------------------------------------------------//
-				for (int i = 0; i < input_file_size; i++)
-				{
-					buffer[i] = decode(buffer[i], key);
-				}
-				//---------------------------------END------------------------------------------------------------------//
-
-				//writing to the output file:
-				//---------------------------------START--------------------------------------------------------------//
-				OVERLAPPED ol2 = { 0 };
-
-				if (FALSE == (WriteFile(
-					output_file_handle,
-					buffer,
-					input_file_size,
-					&ol2,
-					NULL)))
-				{
-					printf("WriteFile error: %d\n", GetLastError()); // you can make this better by using GetLastError()
-					return STATUS_CODE_FAILURE;
-				}
-				//---------------------------------END------------------------------------------------------------------//
-			}
-			free(buffer);
-			CloseHandle(output_file_handle);
-			CloseHandle(input_file_handle);
-}
 
 
 	
