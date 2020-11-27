@@ -6,9 +6,6 @@
 #include"file_handler.h"
 #include "io_Thread.h"
 
-HANDLE ghSemaphore; // maybe it is better to initialize it on heap as said in recitation 4
-
-
 const int STATUS_CODE_FAILURE = -1;
 static const int OUTPUT_FILE_NAME_LENGTH = 14;
 
@@ -142,7 +139,11 @@ int main(int argc, char* argv[])
 		}
 
 	}
+//---------------------------------END------------------------------------------------------------------------------------------------------//
 	Sleep(2);
+
+/*closing program:*/
+//---START---------------------------------------------------------------------------------------------------------------------------------------//
 	for (i = 1; i <= num_of_threads; i++)
 	{
 		CloseHandle(aThread[i]);
