@@ -4,6 +4,7 @@
 
 #include <windows.h>
 #include "io_Thread.h"
+//#include "main.c"
 
 // Function Definitions --------------------------------------------------------
 DWORD WINAPI ThreadProc(LPVOID lpParam)
@@ -19,6 +20,11 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 	HANDLE input_file_handle = open_input_file(path_of_input);
 	int input_file_size = end_char - (start_char - 1);
 	char* buffer = (char*)calloc(input_file_size, sizeof(char)); // initializing the Buffer
+	if (NULL == buffer)
+	{
+		printf("Error when allocating memory");
+		return -1;
+	}
 	OVERLAPPED ol = { 0 };
 	if (start_char <= end_char)
 	{

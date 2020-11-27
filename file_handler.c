@@ -65,7 +65,7 @@ void find_input_file_sizes(char* directory_with_input, int* p_num_of_rows, LONG*
 	int flag;
 	while ((c=fgetc(p_stream_input)) != EOF)
 	{
-		if (c == '\n')
+		if (c == '\n' || c =='\t' )
 		{
 			num_of_rows += 1;
 			input_file_size += 1;

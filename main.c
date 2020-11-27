@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
 	}
 
 
-	int key = atoi(argv[2]);														// getting the key as integer
+	int key = atoi(argv[2]);								// getting the key as integer
 
 	/*initializes the number of rows and number of chars in input file:*/
 	//---START---------------------------------------------------------------------------------------------------------------------------------------//
@@ -71,7 +71,17 @@ int main(int argc, char* argv[])
 
 	int num_of_threads= atoi(argv[3]);
 	int* rows_per_thread_array = (int*)calloc(num_of_threads + 1, sizeof(int));
+	if (rows_per_thread_array == NULL)
+	{
+		printf("Memory allocation failed");
+		return STATUS_CODE_FAILURE;
+	}
 	int** range_for_every_thread_array = (int**)malloc(num_of_threads * sizeof(int*));
+	if (range_for_every_thread_array == NULL)
+	{
+		printf("Memory allocation failed");
+		return STATUS_CODE_FAILURE;
+	}
 	start_end_thread_array(num_of_rows, num_of_threads, rows_per_thread_array, range_for_every_thread_array);
 	start_end_thread_array_in_chars(sizes_of_rows_array, range_for_every_thread_array,num_of_threads); // Updates range_for_every_thread_array to chars counting instead of rows.
 	//---------------------------------END------------------------------------------------------------------//
@@ -94,8 +104,8 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	HANDLE* aThread = (HANDLE*)malloc(sizeof(HANDLE) * (num_of_threads + 1));
-	if (NULL == aThread)
+	HANDLE* a_Thread = (HANDLE*)malloc(sizeof(HANDLE) * (num_of_threads + 1));
+	if (NULL == a_Thread)
 	{
 		printf("Error when allocating memory");
 		return STATUS_CODE_FAILURE;
@@ -123,7 +133,7 @@ int main(int argc, char* argv[])
 		(p_thread_params[i])->key = key;
 
 
-		aThread[i] = CreateThread(
+		a_Thread[i] = CreateThread(
 			NULL,       // default security attributes
 			0,          // default stack size
 			(LPTHREAD_START_ROUTINE)ThreadProc,
@@ -131,7 +141,7 @@ int main(int argc, char* argv[])
 			0,          // default creation flags
 			&ThreadID[i]); // receive thread identifier 
 
-		if (aThread[i] == NULL)
+		if (a_Thread[i] == NULL)
 		{
 			//indicates if we have a problem with a thread
 			printf("CreateThread error: %d\n", GetLastError());
@@ -146,9 +156,9 @@ int main(int argc, char* argv[])
 //---START---------------------------------------------------------------------------------------------------------------------------------------//
 	for (i = 1; i <= num_of_threads; i++)
 	{
-		CloseHandle(aThread[i]);
+		CloseHandle(a_Thread[i]);
 	}
-	free(aThread);
+	free(a_Thread);
 	free(sizes_of_rows_array);
 	free(rows_per_thread_array);
 	for (int i = 1; i <= num_of_threads; i++)
