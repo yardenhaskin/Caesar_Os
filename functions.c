@@ -1,37 +1,54 @@
 #include <stdio.h>
 
-//our problem with the decoding was that the definition of
-//modulo for negative numbers doesn't give us the expected value
-//I imlemented shift of the code if it gets negative
+//input arguments : letter to decode, key for decoding
+//output : letter - decoded char.
+//funcionality : this function returns the decoded char by Caesar code 
 char decode_small_letters(char letter, int key) {
 	int code = letter - 'a' - key;
 	while (code < 0)
 		code += 26;
 	return ('a' + (code) % 26);
 }
+//input arguments : letter to decode, key for decoding
+//output : letter - decoded char.
+//funcionality : this function returns the decoded char by Caesar code 
 char decode_capital_letters(char letter, int key) {
 	int code = letter - 'A' - key;
 	while (code < 0)
 		code += 26;
 	return  ('A' + (code) % 26);
 }
+//input arguments : letter to decode, key for decoding
+//output : letter - decoded char.
+//funcionality : this function returns the decoded char by Caesar code 
 char decode_number(char letter, int key) {
 	int code = letter - '0' - key;
 	while (code < 0)
 		code += 10;
 	return ('0' + (code) % 10);
 }
-
+//input arguments : letter to encode, key for encoding
+//output : letter - encoded char.
+//funcionality : this function returns the encoded char by Caesar code 
 char encode_small_letters(char letter, int key) {
 	return ('a' + (letter - 'a' + key) % 26);
 }
+//input arguments : letter to encode, key for encoding
+//output : letter - encoded char.
+//funcionality : this function returns the encoded char by Caesar code 
 char encode_capital_letters(char letter, int key) {
 	return  ('A' + (letter - 'A' + key) % 26);
 }
+//input arguments : letter to encode, key for encoding
+//output : letter - encoded char.
+//funcionality : this function returns the encoded char by Caesar code 
 char encode_number(char letter, int key) {
 	return ('0' + (letter - '0' + key) % 10);
 }
-
+//input arguments : letter to decode, key for decoding
+//output : letter - decoded char.
+//funcionality : this function returns the decoded char by Caesar code by calling 
+// the right decoding function( we have a function for every relevant case)
 char decode(char letter, int key) {
 	if (letter >= 'a' && letter <= 'z')
 		return decode_small_letters(letter, key);
@@ -41,7 +58,10 @@ char decode(char letter, int key) {
 		return decode_number(letter, key);
 	return letter;
 }
-
+//input arguments : letter to encode, key for encoding
+//output : letter - encoded char.
+//funcionality : this function returns the encoded char by Caesar code by calling 
+// the right encoding function( we have a function for every relevant case)
 char encode(char letter, int key) {
 	if (letter >= 'a' && letter <= 'z')
 		return encode_small_letters(letter, key);
@@ -76,7 +96,10 @@ void start_end_thread_array(int num_of_rows, int num_of_threads, int* rows_per_t
 		range_for_every_thread_array[row][1] = range_for_every_thread_array[row][0] + rows_per_thread_array[row] - 1;
 	}
 }
-
+//input arguments :directory with input - is the directory for the input file. 
+//sizes of rows array- is a pointer to an array that will contain the start and end row for every thread
+//output : void function
+//funcionality : this function gives us the information how many rows each thread read, encode/decode and writes 
 
 void make_sizes_of_rows_array(char* directory_with_input, int* sizes_of_rows_array)
 {
@@ -93,11 +116,9 @@ void make_sizes_of_rows_array(char* directory_with_input, int* sizes_of_rows_arr
 	char c;
 	while ((c = getc(p_stream_input)) != EOF)
 	{
-
-
 		if (c == '\n')
 		{
-			row_size += 1;
+			row_size += 2;
 			sizes_of_rows_array[num_of_rows] = row_size;
 			num_of_rows += 1;
 			row_size = 0;
@@ -115,10 +136,13 @@ void make_sizes_of_rows_array(char* directory_with_input, int* sizes_of_rows_arr
 
 	fclose(p_stream_input);
 }
-
+//input arguments :sizes of rows array-is a pointer to array that 
+//will contain the sizes of each row.range for every thread array - is a pointer to an array that contains
+//arrays , where every array has the range for it's thread
+//output : void function
+//funcionality : this function gives us the information how many chars( = bytes) each thread  writes 
 void start_end_thread_array_in_chars(int* sizes_of_rows_array, int** range_for_every_thread_array, int num_of_threads)
 {
-	
 	int sum = 0;
 	int last_row = range_for_every_thread_array[1][1];
 	for (int j = 0; j <= last_row ;j++)

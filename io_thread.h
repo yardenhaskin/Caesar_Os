@@ -9,7 +9,11 @@
 // Types -----------------------------------------------------------------------
 /*
 * A type for thread parameters
-*/
+//this type is an input for the threads, and contains arr-an array that
+//contains start row and end row
+//contains pathes for input and output file , contains key for encryption/decryption
+//contains the semaphore object that was declared in main
+*/ 
 typedef struct
 {
 	//Thread should get only these arguments:
@@ -17,6 +21,7 @@ typedef struct
 	char* full_path_of_input;
 	char* full_path_of_output;
 	int key;
+	HANDLE ghSemaphore;
 } IO_THREAD_params_t;
 
 // Function Declarations -------------------------------------------------------
